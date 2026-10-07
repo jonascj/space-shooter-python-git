@@ -43,10 +43,6 @@ projectiles = []
 projectile_w = 4 
 projectile_h = 8
 
-# Keypress status
-left_pressed = False
-right_pressed = False
-
 # Sound: weapon / laser 
 # https://sfxr.me/#34T6Pm25W5VunHtL14gUxhLx6MqNduzaeRPcUbqtT4RN55w6nP9NipaUrx5ZBBvohWwXgMrd5BS2e7HwRwEVyzmKM3FV8LiU7Gh5ob2VvvMi6ftqdhbVB54ZM 
 sound_laser = pg.mixer.Sound("sounds/laser.wav")
@@ -76,24 +72,9 @@ while running:
             if event.key == pg.K_ESCAPE:
                 running = False
 
-            elif event.key == pg.K_LEFT:
-                left_pressed = True
-
-            elif event.key == pg.K_RIGHT:
-                right_pressed = True
-
             elif event.key == pg.K_SPACE:
                 projectile_fired = True
 
-        # Keyreleases
-        elif event.type == pg.KEYUP:
-
-            if event.key == pg.K_LEFT:
-                left_pressed = False 
-
-            elif event.key == pg.K_RIGHT:
-                right_pressed = False 
-    
 
     ## Updating (movement, collisions, etc.) ##
 
@@ -102,11 +83,15 @@ while running:
         alien['y'] += 1
 
     # Spaceship
-    if left_pressed:
+    keys = pg.key.get_pressed()
+    if keys[pg.K_LEFT]:
         ship_x -= 8
 
-    if right_pressed:
+    if keys[pg.K_RIGHT]:
         ship_x += 8
+
+    # Keep the spaceship inside the screen
+    ship_x = max(0, min(400 - ship_w, ship_x))
 
     # Projectile movement
     # Reverse iteration needed to handle each projectile correctly
@@ -134,10 +119,20 @@ while running:
                     # Alien is hit
                     projectiles.remove(projectile)
                     aliens.remove(alien)
+                    score += 1
 
                     # No further aliens can be hit by this projectile 
                     # so skip to the next projectile 
                     break
+
+    # Game over if an alien hits the spaceship or reaches the bottom
+    for alien in aliens:
+        hits_ship = (alien['x'] < ship_x + ship_w and
+                     ship_x < alien['x'] + alien_w and
+                     alien['y'] < ship_y + ship_h and
+                     ship_y < alien['y'] + alien_h)
+        if hits_ship or alien['y'] > 600:
+            running = False
 
     # Firing (spawning new projectiles)
     if projectile_fired:
